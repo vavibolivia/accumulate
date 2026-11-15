@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 윈도우 전체화면 앱 (WPF). 계산은 같은 폴더의 binance-cumulative-server.jar 가 하고, 이 앱이 켜고 끈다. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- 트레이 아이콘(NotifyIcon)용 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>BinanceCumulative</AssemblyName>
+    <RootNamespace>BinanceCumulative.Pc.App</RootNamespace>
+    <Product>바이낸스 누적 순매수</Product>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- WinForms 는 트레이 아이콘에만 쓴다 (코드에서 WF. 로 직접 지정). 암시적 using 은 WPF 형식과 이름이 겹쳐 끈다 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ScottPlot.WPF" Version="5.0.55" />
+  </ItemGroup>
+  <!-- 이 폴더에 함께 둔 서버 jar 를 출력 폴더로 복사 (디버그 실행용) -->
+  <ItemGroup Condition="Exists('..\binance-cumulative-server.jar') And !Exists('..\..\server\build\libs\binance-cumulative-server.jar')">
+    <None Include="..\binance-cumulative-server.jar" Link="binance-cumulative-server.jar" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BinanceCumulative.Pc.Core\BinanceCumulative.Pc.Core.csproj" />
+  </ItemGroup>
+  <!-- 계산 서버를 앱과 같은 폴더로 복사 (먼저 ./gradlew :server:fatJar) -->
+  <ItemGroup Condition="Exists('..\..\server\build\libs\binance-cumulative-server.jar')">
+    <None Include="..\..\server\build\libs\binance-cumulative-server.jar" Link="binance-cumulative-server.jar" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

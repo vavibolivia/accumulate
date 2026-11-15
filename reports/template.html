@@ -1,0 +1,307 @@
+<title>/*TITLE*/</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* 레이아웃: 결론(3개 코인) → 고른 방법 → 시장 배경 → 빠진 코인 → 검증·한계. 한 장을 위에서 아래로 읽는다. */
+:root{
+  color-scheme:dark;
+  --bg:#0c0f13; --panel:#13171d; --panel2:#181d25; --line:#252c37; --line2:#323b48;
+  --ink:#e9ecf0; --ink2:#aab3c0; --ink3:#77818f;
+  --accent:#f0b90b; --accent-soft:rgba(240,185,11,.13);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;      /* 계열: 1 파랑(가격·ETH) 2 주황(BTC) 3 청록(순매수·알트) */
+  --good:#2fbf8a; --bad:#ef5d6f; --warn:#e2a23a;
+  --font:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --mono:"IBM Plex Mono","Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  color-scheme:light;
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#f1f3f6; --line:#dfe3ea; --line2:#c9d0da;
+  --ink:#12161c; --ink2:#48515e; --ink3:#727c8a;
+  --accent:#9a6f00; --accent-soft:rgba(190,140,0,.12);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#12936a;
+  --good:#0f8a5f; --bad:#cf3247; --warn:#a86a00;
+}}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#f1f3f6; --line:#dfe3ea; --line2:#c9d0da;
+  --ink:#12161c; --ink2:#48515e; --ink3:#727c8a;
+  --accent:#9a6f00; --accent-soft:rgba(190,140,0,.12);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#12936a;
+  --good:#0f8a5f; --bad:#cf3247; --warn:#a86a00;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-block:36px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.6vw,44px);font-weight:700;line-height:1.15}
+h2{font-size:21px;font-weight:700}
+h3{font-size:15px;font-weight:600}
+p{margin:0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--accent);text-transform:uppercase}
+.lede{font-size:17px;color:var(--ink2);max-width:66ch}
+.scope{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;color:var(--ink3)}
+.scope b{color:var(--ink2);font-weight:600}
+header{display:flex;flex-direction:column;gap:14px}
+section{display:flex;flex-direction:column;gap:16px}
+.sec-head{display:flex;flex-direction:column;gap:4px}
+.sec-head p{color:var(--ink2);max-width:72ch}
+
+/* 3개 코인 */
+.picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:980px){.picks{grid-template-columns:1fr}}
+.pick{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pick-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tick{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em}
+.pname{color:var(--ink3);font-size:13px}
+.tag{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.verdict{font-size:14px;color:var(--ink2);min-height:4.8em}
+.chart-label{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink3);gap:8px}
+.chart-label b{color:var(--ink);font-weight:600}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:13px;border-top:1px solid var(--line);padding-top:12px}
+.kv dt{color:var(--ink3);margin:0}
+.kv dd{margin:0;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+dl{margin:0}
+.risk{font-size:12.5px;color:var(--ink2);background:var(--panel2);border-radius:10px;padding:10px 12px}
+.risk b{color:var(--warn);font-weight:600}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+
+/* 고른 방법 */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.steps{grid-template-columns:1fr}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.step .big{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1.1}
+.step .big small{font-size:13px;color:var(--ink3);font-weight:400}
+.step p{font-size:12.5px;color:var(--ink2)}
+.two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:64px 1fr 48px;gap:10px;align-items:center;font-size:12.5px}
+.bar-row .track{height:10px;background:var(--panel2);border-radius:5px;overflow:hidden}
+.bar-row .fill{height:100%;background:var(--s3);border-radius:5px}
+.bar-row .fill.dim{background:var(--line2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+ul.take{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:8px;color:var(--ink2);font-size:14px}
+ul.take b{color:var(--ink)}
+
+/* 표 */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:760px}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11.5px;font-weight:600;color:var(--ink3);letter-spacing:.02em}
+th:first-child,td:first-child{text-align:left}
+td:last-child,th:last-child{text-align:left;white-space:normal;min-width:240px;color:var(--ink2)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--mono)}
+td .tk{font-family:var(--mono);font-weight:600}
+.grp td{background:var(--panel2);color:var(--ink3);font-size:11.5px;font-weight:600;letter-spacing:.04em}
+
+.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.checks{grid-template-columns:1fr}}
+.checks ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:7px;font-size:13.5px;color:var(--ink2)}
+.checks b{color:var(--ink)}
+details{font-size:12.5px;color:var(--ink3)}
+details summary{cursor:pointer;color:var(--ink2)}
+details a{color:var(--ink2)}
+.src{columns:2;column-gap:28px;margin:10px 0 0;padding-left:1.1em}
+@media (max-width:760px){.src{columns:1}}
+.src li{break-inside:avoid;margin-bottom:5px;overflow-wrap:anywhere}
+footer{font-size:12px;color:var(--ink3);border-top:1px solid var(--line);padding-top:16px}
+
+/* 차트 공통 */
+.tip{position:absolute;pointer-events:none;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.45;color:var(--ink);white-space:nowrap;z-index:5;transform:translate(-50%,-100%);box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.tip .d{color:var(--ink3)}
+svg text{font-family:var(--mono);font-size:10.5px;fill:var(--ink3)}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .axis{stroke:var(--line2);stroke-width:1}
+svg .zero{stroke:var(--ink3);stroke-width:1;stroke-dasharray:3 3}
+svg .cross{stroke:var(--ink3);stroke-width:1}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 id="h1"></h1>
+    <p class="lede" id="lede"></p>
+    <div class="scope" id="scope"></div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2 id="concl-h"></h2>
+      <p id="concl-p"></p>
+    </div>
+    <div class="picks" id="picks"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>어떻게 골랐나</h2>
+      <p id="how-p"></p>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="two">
+      <div class="card">
+        <h3 id="rules-h"></h3>
+        <ul class="take" id="rules"></ul>
+      </div>
+      <div class="card">
+        <h3 id="bars-h"></h3>
+        <p style="font-size:13px;color:var(--ink2)" id="bars-p"></p>
+        <div class="bars" id="sens"></div>
+        <p style="font-size:12.5px;color:var(--ink3)" id="sens-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2 id="mkt-h"></h2>
+      <p id="mkt-lede"></p>
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="chart-label"><b>비트코인 가격 (USDT, 일별 종가)</b><span id="btc-range"></span></div>
+        <div class="chart" id="c-btc"></div>
+        <div class="chart-label"><b>월별 시장가 순매수 (억 USDT)</b><span>0 아래 = 순매도</span></div>
+        <div class="chart" id="c-flow"></div>
+        <div class="legend"><span><i style="background:var(--s2)"></i>BTC</span><span><i style="background:var(--s1)"></i>ETH</span><span><i style="background:var(--s3)"></i>그 외 코인</span></div>
+        <details><summary>월별 숫자 표로 보기</summary><div class="tbl-wrap" style="margin-top:8px"><table id="flow-table" style="min-width:520px"></table></div></details>
+      </div>
+      <div class="card">
+        <h3>데이터와 보도로 본 1년</h3>
+        <ul class="take" id="mkt-take"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2 id="oth-h"></h2>
+      <p id="oth-p"></p>
+    </div>
+    <div class="tbl-wrap"><table id="others"></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>검증한 것과 한계</h2>
+    </div>
+    <div class="checks">
+      <div class="card"><h3>검증한 것</h3><ul id="verified"></ul></div>
+      <div class="card"><h3>알아 둘 한계</h3><ul id="limits"></ul></div>
+    </div>
+    <details><summary>외부 자료 출처</summary><ol class="src" id="sources"></ol></details>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const D = /*DATA*/;
+const N = /*NOTES*/;
+const $ = (s, r=document) => r.querySelector(s);
+const el = (tag, attrs={}, html='') => { const e=document.createElement(tag); for(const k in attrs) e.setAttribute(k, attrs[k]); if(html) e.innerHTML=html; return e; };
+const SVG = (tag, attrs={}) => { const e=document.createElementNS('http://www.w3.org/2000/svg', tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+const eok = v => (v/1e8);
+const fEok = (v, d=2) => (v>=0?'+':'−') + Math.abs(v/1e8).toFixed(d) + '억';
+const fPct = (v, d=1) => (v>=0?'+':'−') + Math.abs(v).toFixed(d) + '%';
+const cls = v => v>=0 ? 'pos' : 'neg';
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- 선·면 그래프 (십자선 + 말풍선) ---------- */
+function lineChart(host, dates, vals, o){
+  const W=520, H=o.h||130, m={l:46,r:10,t:8,b:o.xlabels===false?6:20};
+  const svg=SVG('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':o.label||''});
+  let lo=Math.min(...vals), hi=Math.max(...vals);
+  if(o.zero){ lo=Math.min(lo,0); hi=Math.max(hi,0); }
+  if(o.ref!=null){ lo=Math.min(lo,o.ref); hi=Math.max(hi,o.ref); }
+  const pad=(hi-lo)*0.08||1; lo-=o.zero&&lo===0?0:pad; hi+=pad;
+  const x=i=>m.l+(W-m.l-m.r)*i/(vals.length-1), y=v=>m.t+(H-m.t-m.b)*(1-(v-lo)/(hi-lo));
+  const ticks=niceTicks(lo,hi,3);
+  ticks.forEach(t=>{ svg.append(SVG('line',{class:'grid',x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)})); const tx=SVG('text',{x:m.l-6,y:y(t)+3.5,'text-anchor':'end'}); tx.textContent=o.yfmt(t); svg.append(tx); });
+  if(o.ref!=null){ svg.append(SVG('line',{class:'zero',x1:m.l,x2:W-m.r,y1:y(o.ref),y2:y(o.ref)})); }
+  if(o.zero){ svg.append(SVG('line',{class:'zero',x1:m.l,x2:W-m.r,y1:y(0),y2:y(0)})); }
+  const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  if(o.area){ const base=y(o.zero?0:lo); svg.append(SVG('polygon',{points:`${x(0)},${base} ${pts} ${x(vals.length-1)},${base}`,fill:o.color,'fill-opacity':.16,stroke:'none'})); }
+  svg.append(SVG('polyline',{points:pts,fill:'none',stroke:o.color,'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  svg.append(SVG('circle',{cx:x(vals.length-1),cy:y(vals[vals.length-1]),r:3.5,fill:o.color,stroke:css('--panel'),'stroke-width':2}));
+  if(o.xlabels!==false){ monthMarks(dates).forEach(([i,lab])=>{ const tx=SVG('text',{x:x(i),y:H-5,'text-anchor':'middle'}); tx.textContent=lab; svg.append(tx); }); }
+  const cross=SVG('line',{class:'cross',y1:m.t,y2:H-m.b,visibility:'hidden'}); const dot=SVG('circle',{r:4,fill:o.color,stroke:css('--panel'),'stroke-width':2,visibility:'hidden'});
+  svg.append(cross,dot); host.append(svg);
+  const tip=el('div',{class:'tip',hidden:''}); host.append(tip);
+  const move=ev=>{ const r=svg.getBoundingClientRect(); const px=(ev.clientX-r.left)/r.width*W; let i=Math.round((px-m.l)/(W-m.l-m.r)*(vals.length-1)); i=Math.max(0,Math.min(vals.length-1,i));
+    cross.setAttribute('x1',x(i)); cross.setAttribute('x2',x(i)); cross.setAttribute('visibility','visible'); dot.setAttribute('cx',x(i)); dot.setAttribute('cy',y(vals[i])); dot.setAttribute('visibility','visible');
+    tip.hidden=false; tip.innerHTML=`<span class="d">${dates[i]}</span><br><b class="num">${o.tfmt(vals[i])}</b>`; tip.style.left=(x(i)/W*100)+'%'; tip.style.top=(y(vals[i])/H*r.height-8)+'px'; };
+  svg.addEventListener('pointermove',move); svg.addEventListener('pointerleave',()=>{tip.hidden=true;cross.setAttribute('visibility','hidden');dot.setAttribute('visibility','hidden');});
+}
+function niceTicks(lo,hi,n){ const span=hi-lo, step0=span/n, mag=Math.pow(10,Math.floor(Math.log10(step0))), f=step0/mag; const step=(f<1.5?1:f<3?2:f<7?5:10)*mag; const out=[]; for(let v=Math.ceil(lo/step)*step; v<=hi+1e-9; v+=step) out.push(+v.toFixed(10)); return out; }
+function monthMarks(dates){ const out=[]; let last=''; dates.forEach((d,i)=>{ const mo=d.slice(0,7); if(mo!==last && d.slice(8)==='01'){ const m=+d.slice(5,7); if(m%3===1) out.push([i, d.slice(2,4)+'.'+d.slice(5,7)]); } last=mo; }); return out; }
+
+/* ---------- 월별 누적 막대 (0 기준 위아래) ---------- */
+function flowChart(host, months){
+  const W=520,H=190,m={l:46,r:10,t:8,b:22}; const svg=SVG('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'월별 시장가 순매수'});
+  const keys=[['btc','--s2','BTC'],['eth','--s1','ETH'],['alt','--s3','그 외 코인']];
+  let lo=0,hi=0; months.forEach(r=>{ let p=0,n=0; keys.forEach(([k])=>{ const v=eok(r[k]); if(v>=0)p+=v; else n+=v; }); hi=Math.max(hi,p); lo=Math.min(lo,n); });
+  const pad=(hi-lo)*.06; lo-=pad; hi+=pad; const y=v=>m.t+(H-m.t-m.b)*(1-(v-lo)/(hi-lo)); const bw=(W-m.l-m.r)/months.length;
+  niceTicks(lo,hi,4).forEach(t=>{ svg.append(SVG('line',{class:'grid',x1:m.l,x2:W-m.r,y1:y(t),y2:y(t)})); const tx=SVG('text',{x:m.l-6,y:y(t)+3.5,'text-anchor':'end'}); tx.textContent=t; svg.append(tx); });
+  host.append(svg); const tip=el('div',{class:'tip',hidden:''}); host.append(tip);
+  months.forEach((r,i)=>{ let up=0,dn=0; const cx=m.l+bw*i+bw/2, w=Math.min(26,bw-8); const g=SVG('g');
+    keys.forEach(([k,c])=>{ const v=eok(r[k]); if(!v) return; let y0,y1; if(v>=0){ y0=y(up+v); y1=y(up); up+=v; } else { y0=y(dn); y1=y(dn+v); dn+=v; }
+      g.append(SVG('rect',{x:cx-w/2,y:y0+1,width:w,height:Math.max(0,y1-y0-2),rx:2,fill:css(c)})); });
+    const hit=SVG('rect',{x:m.l+bw*i,y:m.t,width:bw,height:H-m.t-m.b,fill:'transparent'}); g.append(hit); svg.append(g);
+    const tx=SVG('text',{x:cx,y:H-6,'text-anchor':'middle'}); tx.textContent=r.month.slice(2).replace('-','.'); if(i%2===0||months.length<8) svg.append(tx);
+    hit.addEventListener('pointerenter',()=>{ tip.hidden=false; tip.innerHTML=`<span class="d">${r.month}${i===months.length-1?' (13일까지)':i===0?' (14일부터)':''}</span><br>`+keys.map(([k,c,n])=>`<span style="color:${css(c)}">■</span> ${n} <b class="num">${fEok(r[k])}</b>`).join('<br>'); tip.style.left=(cx/W*100)+'%'; tip.style.top=(y(up)/H*svg.getBoundingClientRect().height-6)+'px'; });
+    hit.addEventListener('pointerleave',()=>tip.hidden=true); });
+  svg.append(SVG('line',{class:'zero',x1:m.l,x2:W-m.r,y1:y(0),y2:y(0)}));
+}
+
+/* ---------- 내용 채우기 ---------- */
+$('#lede').textContent = N.lede;
+$('#scope').innerHTML = N.scope.map(s=>`<span>${s}</span>`).join('');
+const PICKS=N.pickList;
+$('#eyebrow').textContent=N.eyebrow; $('#h1').textContent=N.h1; $('#concl-h').textContent=N.conclH; $('#concl-p').textContent=N.conclP; $('#how-p').textContent=N.howP; $('#rules-h').textContent=N.rulesH; $('#bars-h').textContent=N.barsH; $('#bars-p').textContent=N.barsP; $('#mkt-h').textContent=N.mktH; $('#oth-h').textContent=N.othH; $('#oth-p').textContent=N.othP;
+PICKS.forEach((b,idx)=>{ const c=D.coins[b], n=N.picks[b];
+  const card=el('article',{class:'pick'});
+  card.innerHTML=`<div class="pick-head"><span class="tick">${b}</span><span class="pname">${n.name}</span><span class="tag">${n.tag}</span></div>
+    <p class="verdict">${n.verdict}</p>
+    <div class="chart-label"><b>BTC 대비 가격</b><span>1년 전 100 → <span class="num">${c.ratio[c.ratio.length-1].toFixed(0)}</span></span></div><div class="chart" data-k="ratio"></div>
+    <div class="chart-label"><b>누적 순매수</b><span class="num">${fEok(c.net)} USDT</span></div><div class="chart" data-k="cum"></div>
+    <dl class="kv">
+      <dt>순매수가 +인 주</dt><dd>${Math.round(c.pos_weeks*52)} / 52주</dd>
+      <dt>순매수가 +인 달</dt><dd>${c.pos_months} / ${c.n_months}개월</dd>
+      <dt>가장 많이 산 5일의 비중</dt><dd>${(c.top5*100).toFixed(0)}%</dd>
+      <dt>최근 6개월 · 90일 순매수</dt><dd>${fEok(c.net6)} · ${fEok(c.net90)}</dd>
+      <dt>순매수 ÷ 시가총액</dt><dd>${c.net_mcap!=null?c.net_mcap.toFixed(1)+'%':'–'}</dd>
+      <dt>가격 1년 (USDT · BTC 대비)</dt><dd><span class="${cls(c.px_chg)}">${fPct(c.px_chg,0)}</span> · <span class="${cls(c.ratio_chg)}">${fPct(c.ratio_chg,0)}</span></dd>
+      <dt>BTC 대비 최근 120일 추세</dt><dd><span class="${cls(c.tr120)}">${fPct(c.tr120,0)}</span></dd>
+      <dt>최근 30일 거래대금 (1년 중앙값 대비)</dt><dd>${(c.v30*100).toFixed(0)}%</dd>
+    </dl>
+    <p class="risk"><b>주의</b> ${n.risk}</p>`;
+  $('#picks').append(card);
+  lineChart($('[data-k=ratio]',card), c.dates, c.ratio, {color:css('--s1'), ref:100, xlabels:false, h:120, yfmt:v=>v.toFixed(0), tfmt:v=>'BTC 대비 '+v.toFixed(1), label:b+' BTC 대비 가격'});
+  lineChart($('[data-k=cum]',card), c.dates, c.cum.map(v=>v/100), {color:css('--s3'), zero:true, area:true, h:130, yfmt:v=>v.toFixed(Math.abs(v)<1&&v!==0?2:1)+'억', tfmt:v=>'누적 '+(v>=0?'+':'−')+Math.abs(v).toFixed(2)+'억 USDT', label:b+' 누적 순매수'});
+});
+$('#steps').innerHTML = N.steps.map(s=>`<div class="step"><h3>${s.t}</h3><div class="big">${s.n}<small> ${s.u}</small></div><p>${s.d}</p></div>`).join('');
+$('#rules').innerHTML = N.rules.map(r=>`<li>${r}</li>`).join('');
+$('#sens').innerHTML = N.sens.map(([b,p,t])=>`<div class="bar-row"><span class="num">${b}</span><div class="track"><div class="fill${PICKS.includes(b)?'':' dim'}" style="width:${Math.max(0,Math.min(100,p))}%"></div></div><span class="num" style="text-align:right">${t}</span></div>`).join('');
+$('#sens-note').textContent = N.sensNote;
+$('#mkt-lede').textContent = N.mktLede;
+const btc=D.btc; $('#btc-range').textContent = `${Math.round(btc[0][1]).toLocaleString()} → ${Math.round(btc[btc.length-1][1]).toLocaleString()}`;
+lineChart($('#c-btc'), btc.map(r=>r[0]), btc.map(r=>r[1]), {color:css('--s2'), h:150, yfmt:v=>(v/1000).toFixed(0)+'K', tfmt:v=>Math.round(v).toLocaleString()+' USDT', label:'비트코인 가격'});
+flowChart($('#c-flow'), D.market);
+$('#flow-table').innerHTML = '<tr><th>월</th><th>BTC</th><th>ETH</th><th>그 외 코인</th><th>순매수인 코인 비율</th><th>BTC 월말 종가</th></tr>' + D.market.map(r=>`<tr><td>${r.month}</td><td class="num">${fEok(r.btc)}</td><td class="num">${fEok(r.eth)}</td><td class="num">${fEok(r.alt)}</td><td class="num">${(r.breadth*100).toFixed(0)}%</td><td class="num" style="text-align:right;min-width:0">${Math.round(r.btc_close).toLocaleString()}</td></tr>`).join('');
+$('#mkt-take').innerHTML = N.mktTake.map(r=>`<li>${r}</li>`).join('');
+const row=(b,why)=>{ const c=D.coins[b]; return `<tr><td><span class="tk">${b}</span></td><td class="num ${cls(c.net)}">${fEok(c.net)}</td><td class="num">${Math.round(c.pos_weeks*52)}/52</td><td class="num">${(c.top5*100).toFixed(0)}%</td><td class="num ${cls(c.px_chg)}">${fPct(c.px_chg,0)}</td><td class="num ${cls(c.ratio_chg)}">${fPct(c.ratio_chg,0)}</td><td class="num ${cls(c.tr120)}">${fPct(c.tr120,0)}</td><td>${why}</td></tr>`; };
+$('#others').innerHTML = '<tr><th>코인</th><th>1년 순매수 (USDT)</th><th>+인 주</th><th>상위 5일 비중</th><th>가격 1년</th><th>BTC 대비 1년</th><th>BTC 대비 120일 추세</th><th>판단</th></tr>'
+  + N.groups.map(g=>`<tr class="grp"><td colspan="8">${g.title}</td></tr>` + g.rows.map(([b,w])=>row(b,w)).join('')).join('');
+$('#verified').innerHTML = N.verified.map(r=>`<li>${r}</li>`).join('');
+$('#limits').innerHTML = N.limits.map(r=>`<li>${r}</li>`).join('');
+$('#sources').innerHTML = N.sources.map(([t,u])=>`<li>${t} — <a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\//,'').slice(0,70)}</a></li>`).join('');
+$('#foot').textContent = N.foot;
+</script>

@@ -1,0 +1,549 @@
+<Window x:Class="BinanceCumulative.Pc.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sp="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:local="clr-namespace:BinanceCumulative.Pc.App"
+        Title="누적 순매수"
+        Width="1600" Height="950" MinWidth="1180" MinHeight="720"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="{StaticResource UiFont}"
+        FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ================= 앱 바 ================= -->
+        <Border Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="20,10,12,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 로고 · 이름 -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Grid Width="30" Height="30" Margin="0,0,12,0">
+                        <Border CornerRadius="8">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#F8D33A" Offset="0" />
+                                    <GradientStop Color="#E0A100" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <Path Data="M7,21 L12,15 L16,18 L23,9" Stroke="{StaticResource OnAccentBrush}" StrokeThickness="2.6"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                    </Grid>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="누적 순매수" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="바이낸스 현물 · 1분봉 체결 기반" Style="{StaticResource Caption}" Margin="0,1,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 서버 연결 상태 -->
+                <Border Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,18,0"
+                        Background="{StaticResource ElevBrush}" CornerRadius="14" Padding="10,5" ToolTip="{Binding Status}">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{StaticResource UpBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Offline}" Value="True">
+                                            <Setter Property="Fill" Value="{StaticResource AccentBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusIsError}" Value="True">
+                                            <Setter Property="Fill" Value="{StaticResource DownBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="{Binding Status}" Style="{StaticResource Label}" MaxWidth="360" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 1분봉 수집 진행 -->
+                <Border Grid.Column="2" VerticalAlignment="Center" Background="{StaticResource ElevBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                        CornerRadius="10" Padding="14,7" Margin="0,0,10,0"
+                        ToolTip="바이낸스에서 지금 거래 중인 모든 현물 페어를, 상장한 달부터 이번 달까지 1분봉으로 받아 둔 비율 (서버 데이터 폴더 기준)">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="1분봉 수집" Style="{StaticResource MeterLabel}" Margin="0,0,12,0" />
+                        <ProgressBar Grid.Column="1" Style="{StaticResource Meter}" Value="{Binding CollectPercent, Mode=OneWay}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Style="{StaticResource MeterPct}" FontSize="14" Margin="12,0,0,0" MinWidth="50"
+                                   Text="{Binding CollectPercent, StringFormat={}{0:0.0}%}" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource Caption}" FontWeight="Normal" Margin="0,4,0,0"
+                                   Text="{Binding CollectStatus}" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </Border>
+
+                <!-- 창 버튼 -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource IconButton}" Click="OnHideToTray" Content="&#xE921;"
+                            ToolTip="트레이로 숨기기 (Ctrl+B) — 계산 서버와 집계는 계속 돌아갑니다" />
+                    <Button Style="{StaticResource IconButton}" Click="OnSettings" Content="&#xE713;" ToolTip="설정" />
+                    <Button Style="{StaticResource IconButton}" Click="OnToggleFullscreen" Content="&#xE740;" ToolTip="전체화면 (F11)" />
+                    <Button Style="{StaticResource IconButton}" Click="OnClose" Content="&#xE8BB;" ToolTip="닫기 (Alt+F4)" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ================= 도구 막대: 보기 선택 ================= -->
+        <Border Grid.Row="1" Padding="20,12,20,0">
+            <DockPanel LastChildFill="False">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="시장" Style="{StaticResource Caption}" Margin="2,0,0,5" />
+                        <ListBox Style="{StaticResource ChipList}" ItemsSource="{Binding Markets}" SelectedValue="{Binding Market, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="기간" Style="{StaticResource Caption}" Margin="2,0,0,5" />
+                        <ListBox Style="{StaticResource ChipList}" ItemsSource="{Binding Periods}" SelectedValue="{Binding Period, Mode=TwoWay}"
+                                 ToolTip="누적 기간. 전체 = 상장한 날부터" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="매수·매도 나누는 방식" Style="{StaticResource Caption}" Margin="2,0,0,5" />
+                        <ListBox Style="{StaticResource ChipList}" ItemsSource="{Binding Methods}" SelectedValue="{Binding MethodKey, Mode=TwoWay}"
+                                 ToolTipService.InitialShowDelay="150" ToolTipService.ShowDuration="60000" ToolTipService.Placement="Bottom">
+                            <ListBox.ToolTip>
+                                <ToolTip ContentTemplate="{x:Null}" MaxWidth="720" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="1분봉 하나의 거래량을 매수·매도로 나누는 방식" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,12" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Style="{StaticResource Tile}" Width="210" Margin="0,0,10,0" Padding="14,12">
+                                                <StackPanel>
+                                                    <TextBlock Text="A  경로" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}" />
+                                                    <TextBlock Text="봉 안에서 가격이 움직인 길" Style="{StaticResource Label}" Margin="0,2,0,10" />
+                                                    <Canvas Width="180" Height="120" HorizontalAlignment="Left">
+                                                        <Line X1="30" Y1="10" X2="30" Y2="110" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.5" />
+                                                        <Rectangle Canvas.Left="20" Canvas.Top="30" Width="20" Height="50" Fill="{StaticResource UpBrush}" Opacity="0.35" Stroke="{StaticResource UpBrush}" />
+                                                        <TextBlock Canvas.Left="0" Canvas.Top="74" Text="시" FontSize="10" Foreground="{StaticResource SubtleBrush}" />
+                                                        <TextBlock Canvas.Left="0" Canvas.Top="24" Text="종" FontSize="10" Foreground="{StaticResource SubtleBrush}" />
+                                                        <Line X1="70" Y1="80" X2="95" Y2="110" Stroke="{StaticResource DownBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                        <Line X1="95" Y1="110" X2="130" Y2="10" Stroke="{StaticResource UpBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                        <Line X1="130" Y1="10" X2="160" Y2="30" Stroke="{StaticResource DownBrush}" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                                        <TextBlock Canvas.Left="102" Canvas.Top="60" Text="매수" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource UpBrush}" />
+                                                        <TextBlock Canvas.Left="140" Canvas.Top="2" Text="매도" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DownBrush}" />
+                                                        <TextBlock Canvas.Left="62" Canvas.Top="98" Text="매도" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DownBrush}" />
+                                                    </Canvas>
+                                                    <TextBlock Text="양봉은 매수, 봉 안에서 내린 만큼은 매도로 봅니다 (음봉은 반대)." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,10,0,0" />
+                                                    <TextBlock Text="가격 움직임으로 추정한 값" TextWrapping="Wrap" Style="{StaticResource Caption}" FontWeight="Normal" Margin="0,6,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource Tile}" Width="210" Margin="0,0,10,0" Padding="14,12">
+                                                <StackPanel>
+                                                    <TextBlock Text="B  종가" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}" />
+                                                    <TextBlock Text="종가가 고가·저가 사이 어디인지" Style="{StaticResource Label}" Margin="0,2,0,10" />
+                                                    <Canvas Width="180" Height="120" HorizontalAlignment="Left">
+                                                        <Line X1="30" Y1="10" X2="30" Y2="110" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.5" />
+                                                        <Rectangle Canvas.Left="20" Canvas.Top="30" Width="20" Height="50" Fill="{StaticResource UpBrush}" Opacity="0.35" Stroke="{StaticResource UpBrush}" />
+                                                        <Line X1="20" Y1="30" X2="150" Y2="30" Stroke="{StaticResource AccentBrush}" StrokeThickness="1" StrokeDashArray="3 2" />
+                                                        <TextBlock Canvas.Left="44" Canvas.Top="16" Text="종가" FontSize="10" Foreground="{StaticResource AccentBrush}" />
+                                                        <TextBlock Canvas.Left="44" Canvas.Top="2" Text="고가" FontSize="10" Foreground="{StaticResource SubtleBrush}" />
+                                                        <TextBlock Canvas.Left="44" Canvas.Top="100" Text="저가" FontSize="10" Foreground="{StaticResource SubtleBrush}" />
+                                                        <Rectangle Canvas.Left="120" Canvas.Top="10" Width="22" Height="20" Fill="{StaticResource DownBrush}" RadiusX="3" RadiusY="3" />
+                                                        <Rectangle Canvas.Left="120" Canvas.Top="30" Width="22" Height="80" Fill="{StaticResource UpBrush}" RadiusX="3" RadiusY="3" />
+                                                        <TextBlock Canvas.Left="148" Canvas.Top="12" Text="매도" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DownBrush}" />
+                                                        <TextBlock Canvas.Left="148" Canvas.Top="62" Text="매수" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource UpBrush}" />
+                                                    </Canvas>
+                                                    <TextBlock Text="종가가 고가에 가까울수록 매수 비중이 커집니다." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,10,0,0" />
+                                                    <TextBlock Text="가격 움직임으로 추정한 값" TextWrapping="Wrap" Style="{StaticResource Caption}" FontWeight="Normal" Margin="0,6,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                            <Border Style="{StaticResource Tile}" Width="210" Margin="0,0,10,0" Padding="14,12">
+                                                <StackPanel>
+                                                    <TextBlock Text="C  체결" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextBrush}" />
+                                                    <TextBlock Text="실제 시장가 체결량" Style="{StaticResource Label}" Margin="0,2,0,10" />
+                                                    <Canvas Width="180" Height="120" HorizontalAlignment="Left">
+                                                        <Rectangle Canvas.Left="10" Canvas.Top="20" Width="100" Height="26" Fill="{StaticResource UpBrush}" RadiusX="5" RadiusY="5" />
+                                                        <Rectangle Canvas.Left="112" Canvas.Top="20" Width="58" Height="26" Fill="{StaticResource DownBrush}" RadiusX="5" RadiusY="5" />
+                                                        <TextBlock Canvas.Left="18" Canvas.Top="25" Text="시장가 매수" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnAccentBrush}" />
+                                                        <TextBlock Canvas.Left="122" Canvas.Top="25" Text="매도" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource OnAccentBrush}" />
+                                                        <TextBlock Canvas.Left="10" Canvas.Top="58" Text="1분봉 거래량 = 매수 체결 + 매도 체결" FontSize="11" Foreground="{StaticResource MutedBrush}" />
+                                                        <TextBlock Canvas.Left="10" Canvas.Top="84" Text="거래소가 기록한 실제 값" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
+                                                    </Canvas>
+                                                    <TextBlock Text="바이낸스가 기록한 시장가 매수·매도 체결량을 그대로 씁니다." TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,10,0,0" />
+                                                    <TextBlock Text="추정이 아닌 실제 값 · 가격과 독립된 정보" TextWrapping="Wrap" Style="{StaticResource Caption}" FontWeight="Normal" Margin="0,6,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ToolTip>
+                            </ListBox.ToolTip>
+                        </ListBox>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock DockPanel.Dock="Right" Style="{StaticResource Label}" VerticalAlignment="Bottom" Margin="0,0,0,7" TextAlignment="Right"
+                           Text="코인별 합산 · 금액은 USDT · 그래프는 거래대금이 가장 큰 페어"
+                           ToolTip="같은 코인의 모든 호가 페어를 한 줄로 합산합니다 (BNB/USDT + BNB/BTC + BNB/ETH → BNB). 순매수·거래대금은 지금 환율로 USDT 환산합니다." />
+            </DockPanel>
+        </Border>
+
+        <!-- ================= 본문 ================= -->
+        <Grid Grid.Row="2" Margin="20,12,20,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="53*" MinWidth="600" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="47*" MinWidth="480" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 왼쪽: 순위 -->
+            <Border Grid.Column="0" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 합계 -->
+                    <UniformGrid Columns="3" Margin="14,14,14,10">
+                        <Border Style="{StaticResource Tile}" Margin="0,0,5,0">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Label}" Text="합계 순매수" />
+                                <TextBlock Style="{StaticResource Kpi}" FontSize="22" Margin="0,4,0,0" Text="{Binding TotalNet}"
+                                           Foreground="{Binding TotalSign, Converter={StaticResource SignBrush}}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Tile}" Margin="5,0">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Label}" Text="순매수 · 순매도 코인" />
+                                <TextBlock Style="{StaticResource Kpi}" FontSize="15" Margin="0,8,0,0" Text="{Binding TotalCounts}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Tile}" Margin="5,0,0,0">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Label}" Text="거래대금 합계" />
+                                <TextBlock Style="{StaticResource Kpi}" FontSize="15" Margin="0,8,0,0" Text="{Binding TotalVolume}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- 검색 -->
+                    <TextBox x:Name="SearchBox" Grid.Row="1" Style="{StaticResource SearchInput}" Margin="14,0,14,8" Tag="코인 검색  ·  Ctrl+F"
+                             Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <!-- 표 -->
+                    <DataGrid x:Name="Table" Grid.Row="2" Margin="4,0,4,6" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected, Mode=TwoWay}"
+                              Sorting="OnSorting" SelectionChanged="OnTableSelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding Rank}" Width="44" CanUserSort="False" HeaderStyle="{StaticResource LeftHeader}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource SubtleBrush}" />
+                                        <Setter Property="FontSize" Value="12" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTemplateColumn Header="코인" SortMemberPath="Name" Width="1.35*" HeaderStyle="{StaticResource LeftHeader}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" ToolTip="{Binding PairsTip}">
+                                            <Grid Width="26" Height="26" Margin="0,0,10,0">
+                                                <Ellipse Fill="{Binding Base, Converter={StaticResource CoinBrush}}" Opacity="0.18" />
+                                                <TextBlock Text="{Binding Base, Converter={StaticResource Initial}}" FontWeight="Bold" FontSize="12"
+                                                           Foreground="{Binding Base, Converter={StaticResource CoinBrush}}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Grid>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Base}" FontWeight="SemiBold" FontSize="13" />
+                                                <TextBlock Text="{Binding Quote}" Style="{StaticResource Caption}" FontWeight="Normal" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="시작일" Width="0.85*" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{StaticResource NumCell}" Text="{Binding StartText}" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                                                   ToolTip="바이낸스에 처음 1분봉이 생긴 날 (합산 줄은 가장 이른 페어)" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="수집" Width="0.7*" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel HorizontalAlignment="Right" Width="56" ToolTip="상장한 달부터 이번 달까지 중 서버가 1분봉을 받아 둔 달의 비율">
+                                            <TextBlock Style="{StaticResource NumCell}" Text="{Binding CollectText}" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+                                            <ProgressBar Value="{Binding CollectValue, Mode=OneWay}" Margin="0,4,0,0">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar" BasedOn="{StaticResource MiniMeter}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding CollectIncomplete}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="순매수" SortMemberPath="Net" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{StaticResource NumCell}" FontWeight="SemiBold" Text="{Binding NetText}"
+                                                   Foreground="{Binding NetSign, Converter={StaticResource SignBrush}}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="÷ 유통량" SortMemberPath="Pct" Width="0.85*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border HorizontalAlignment="Right" CornerRadius="5" Padding="7,2"
+                                                Background="{Binding PctSign, Converter={StaticResource SignSoftBrush}}">
+                                            <TextBlock Style="{StaticResource NumCell}" FontSize="12" FontWeight="SemiBold" Text="{Binding PctText}"
+                                                       Foreground="{Binding PctSign, Converter={StaticResource SignBrush}}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="순매수 코인" SortMemberPath="Coins" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{StaticResource NumCell}" Text="{Binding CoinsText}" Foreground="{Binding CoinsSign, Converter={StaticResource SignBrush}}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="거래대금" SortMemberPath="Volume" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{StaticResource NumCell}" Text="{Binding VolumeText}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="현재가 (USDT)" SortMemberPath="Price" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Style="{StaticResource NumCell}" Text="{Binding PriceText}" Foreground="{StaticResource MutedBrush}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- 비어 있을 때 -->
+                    <TextBlock Grid.Row="2" Style="{StaticResource Overlay}" Text="표시할 코인이 없습니다 · 서버가 1분봉을 받는 대로 채워집니다">
+                        <TextBlock.Visibility>
+                            <Binding Path="Rows.Count" Converter="{StaticResource HasValueToVis}" ConverterParameter="zero" />
+                        </TextBlock.Visibility>
+                    </TextBlock>
+
+                    <!-- 불러오는 중: 받은 1분봉을 하루 단위로 계산하는 동안 -->
+                    <Border Grid.Row="2" Background="{StaticResource ScrimBrush}" CornerRadius="0,0,12,12"
+                            Visibility="{Binding LoadingVisible, Converter={StaticResource BoolToVis}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid Width="84" Height="84" HorizontalAlignment="Center">
+                                <Ellipse Stroke="#2C3440" StrokeThickness="5" />
+                                <Ellipse Style="{StaticResource Spinner}" />
+                                <TextBlock Text="{Binding AggregatePercent, StringFormat={}{0:0}%}" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock Text="불러오는 중" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,0" />
+                            <TextBlock Text="{Binding AggregateStatus}" Style="{StaticResource Label}" HorizontalAlignment="Center" Margin="0,4,0,0"
+                                       MaxWidth="440" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="14" HorizontalAlignment="Stretch" Background="Transparent" ResizeBehavior="PreviousAndNext" />
+
+            <!-- 오른쪽: 선택한 코인 -->
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <!-- 탭 (지금은 상세 하나) -->
+                    <StackPanel Orientation="Horizontal" Visibility="Collapsed">
+                        <RadioButton x:Name="TabDetail" Style="{StaticResource TabToggle}" Content="선택한 코인" IsChecked="True" GroupName="Tabs" />
+                        <RadioButton x:Name="TabGrid" Style="{StaticResource TabToggle}" Content="여러 코인" GroupName="Tabs" Checked="OnGridTabChecked" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" Visibility="{Binding IsChecked, ElementName=TabDetail, Converter={StaticResource BoolToVis}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="1.3*" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="0.8*" />
+                            <RowDefinition Height="0" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 머리: 코인 이름 -->
+                        <DockPanel Margin="18,16,18,10">
+                            <Grid Width="40" Height="40" Margin="0,0,12,0" DockPanel.Dock="Left">
+                                <Ellipse Fill="{Binding Selected.Base, Converter={StaticResource CoinBrush}}" Opacity="0.18" />
+                                <TextBlock Text="{Binding Selected.Base, Converter={StaticResource Initial}}" FontWeight="Bold" FontSize="17"
+                                           Foreground="{Binding Selected.Base, Converter={StaticResource CoinBrush}}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DetailTitle}" FontFamily="{StaticResource DisplayFont}" FontSize="22" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Label}" Text="{Binding DetailSub}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" ToolTip="{Binding DetailSub}" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- 지표 -->
+                        <UniformGrid Grid.Row="1" Columns="5" Margin="14,0,14,8">
+                            <Border Style="{StaticResource Tile}" Margin="4,0" Padding="12,9">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Label}" Text="누적 순매수" />
+                                    <TextBlock Style="{StaticResource Kpi}" FontSize="16" Margin="0,4,0,0" Text="{Binding KpiNet}" TextTrimming="CharacterEllipsis"
+                                               Foreground="{Binding KpiNetSign, Converter={StaticResource SignBrush}}" ToolTip="{Binding KpiNet}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Tile}" Margin="4,0" Padding="12,9">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Label}" Text="순매수 코인 수" />
+                                    <TextBlock Style="{StaticResource Kpi}" FontSize="16" Margin="0,4,0,0" Text="{Binding KpiCoins}" TextTrimming="CharacterEllipsis"
+                                               Foreground="{Binding KpiCoinsSign, Converter={StaticResource SignBrush}}" ToolTip="{Binding KpiCoins}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Tile}" Margin="4,0" Padding="12,9">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Label}" Text="÷ 유통량" />
+                                    <TextBlock Style="{StaticResource Kpi}" FontSize="16" Margin="0,4,0,0" Text="{Binding KpiPct}" TextTrimming="CharacterEllipsis"
+                                               Foreground="{Binding KpiPctSign, Converter={StaticResource SignBrush}}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Tile}" Margin="4,0" Padding="12,9">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Label}" Text="매수 / 매도" />
+                                    <TextBlock Style="{StaticResource NumCell}" HorizontalAlignment="Left" FontSize="12.5" FontWeight="SemiBold" Margin="0,3,0,0"
+                                               Text="{Binding KpiBuy}" Foreground="{StaticResource UpBrush}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Style="{StaticResource NumCell}" HorizontalAlignment="Left" FontSize="12.5" FontWeight="SemiBold"
+                                               Text="{Binding KpiSell}" Foreground="{StaticResource DownBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Tile}" Margin="4,0" Padding="12,9">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Label}" Text="현재가" />
+                                    <TextBlock Style="{StaticResource Kpi}" FontSize="16" Margin="0,4,0,0" Text="{Binding KpiPrice}" TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource PriceBrush}" ToolTip="{Binding KpiPrice}" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- 주의 + 마우스 위치 값 -->
+                        <StackPanel Grid.Row="2" Margin="18,2,18,2">
+                            <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,6"
+                                    Visibility="{Binding MethodWarning, Converter={StaticResource HasValueToVis}}">
+                                <DockPanel>
+                                    <TextBlock Text="&#xE7BA;" Style="{StaticResource Icon}" FontSize="13" Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0" DockPanel.Dock="Left" />
+                                    <TextBlock Foreground="{StaticResource AccentBrush}" FontSize="12" TextWrapping="Wrap" Text="{Binding MethodWarning}" />
+                                </DockPanel>
+                            </Border>
+                            <TextBlock x:Name="CursorText" Style="{StaticResource Label}" FontSize="11.5" TextTrimming="CharacterEllipsis"
+                                       Text="그래프에 마우스를 올리면 그 시점의 값 · 휠: 확대 · 끌기: 이동 · 더블클릭: 처음 보기" />
+                        </StackPanel>
+
+                        <Grid Grid.Row="3">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <DockPanel Margin="0,4,14,0">
+                                <!-- 가격 단위: 이 그래프에만 적용. BTC = 각 시점 BTC 가격으로 나눈 값 (BTC 에 끌려간 움직임을 뺀 가격) -->
+                                <ListBox DockPanel.Dock="Right" Style="{StaticResource ChipList}" ItemsSource="{Binding Units}" SelectedValue="{Binding DisplayUnit, Mode=TwoWay}"
+                                         ToolTip="가격 그래프의 단위. BTC 를 고르면 각 시점의 BTC 가격으로 나눠, 비트코인을 따라 움직인 부분을 뺀 가격 흐름을 봅니다." />
+                                <TextBlock Style="{StaticResource ChartTitle}" Margin="16,6,16,0" VerticalAlignment="Center">
+                                    <Run Text="가격" /><Run x:Name="PriceUnit" Foreground="{StaticResource SubtleBrush}" FontWeight="Normal" />
+                                </TextBlock>
+                            </DockPanel>
+                            <sp:WpfPlot x:Name="PricePlot" Grid.Row="1" Margin="4,0,8,0" />
+                            <TextBlock Grid.Row="1" Style="{StaticResource Overlay}" Text="{Binding DetailMessage}" Visibility="{Binding DetailMessage, Converter={StaticResource HasValueToVis}}" />
+                        </Grid>
+                        <Grid Grid.Row="4">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <TextBlock Style="{StaticResource ChartTitle}">
+                                <Run Text="누적 순매수" /><Run x:Name="NetUnit" Foreground="{StaticResource SubtleBrush}" FontWeight="Normal" />
+                            </TextBlock>
+                            <sp:WpfPlot x:Name="NetPlot" Grid.Row="1" Margin="4,0,8,0" />
+                        </Grid>
+                        <Grid Grid.Row="5">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <TextBlock Style="{StaticResource ChartTitle}">
+                                <Run Text="누적 순매수 코인 수" /><Run x:Name="CoinUnit" Foreground="{StaticResource SubtleBrush}" FontWeight="Normal" />
+                            </TextBlock>
+                            <sp:WpfPlot x:Name="CoinPlot" Grid.Row="1" Margin="4,0,8,6" />
+                        </Grid>
+                        <!-- 그룹 전체 그래프: 사용 안 함 (코드 호환용) -->
+                        <Grid Grid.Row="6" Visibility="Collapsed">
+                            <sp:WpfPlot x:Name="GroupPlot" />
+                        </Grid>
+                    </Grid>
+
+                    <!-- 여러 코인 작은 그래프: 사용 안 함 (코드 호환용) -->
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Tiles}" Visibility="{Binding IsChecked, ElementName=TabGrid, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border MouseLeftButtonUp="OnTileClick">
+                                    <local:MiniChart Series="{Binding Series}" Message="{Binding Message}" Height="120" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ================= 상태 줄 · 서버 로그 ================= -->
+        <Border Grid.Row="3" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="14,5">
+                    <Button Style="{StaticResource FlatButton}" Padding="10,3" FontSize="12" Click="OnToggleLog" x:Name="LogToggle" Content="서버 로그 보기 ▴" />
+                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Label}" Margin="12,0,0,0" VerticalAlignment="Center"
+                               Text="{Binding LastAggregateText}" ToolTip="종목별 일별 집계 DB (설정에서 위치·CSV 내보내기)" />
+                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Label}" Foreground="{StaticResource AccentBrush}" Margin="12,0,0,0" VerticalAlignment="Center"
+                               Text="{Binding CacheNote}" ToolTip="{Binding CacheNote}" TextTrimming="CharacterEllipsis" MaxWidth="460"
+                               Visibility="{Binding CacheNote, Converter={StaticResource HasValueToVis}}" />
+                    <TextBlock Style="{StaticResource Caption}" FontWeight="Normal" Margin="14,0,0,0" VerticalAlignment="Center"
+                               Text="F11 전체화면  ·  Ctrl+F 검색  ·  Ctrl+B 트레이  ·  ↑↓ 코인 이동  ·  Esc 전체화면 끄기" />
+                </DockPanel>
+                <TextBox x:Name="LogBox" Height="170" Visibility="Collapsed" IsReadOnly="True" BorderThickness="0"
+                         Background="{StaticResource BgBrush}" Foreground="{StaticResource MutedBrush}"
+                         FontFamily="Cascadia Mono, Consolas" FontSize="12" Padding="14,6"
+                         VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto" />
+            </DockPanel>
+        </Border>
+
+        <!-- Java 가 없을 때 안내 -->
+        <Border Grid.RowSpan="4" Background="{StaticResource ScrimBrush}" Visibility="{Binding NeedsJava, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource Card}" BorderBrush="{StaticResource AccentBrush}" Padding="28"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560" Effect="{StaticResource CardShadow}">
+                <StackPanel>
+                    <TextBlock Text="Java 17 이상이 필요합니다" FontFamily="{StaticResource DisplayFont}" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Margin="0,10,0,18" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"
+                               Text="계산 서버(binance-cumulative-server.jar)는 Java 로 실행됩니다. Eclipse Temurin 17 또는 21 을 설치한 뒤 이 앱을 다시 실행하세요. 이미 설치했다면 설정에서 java.exe 위치를 지정할 수 있습니다." />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource AccentButton}" Click="OnOpenJavaPage" Content="Java 설치 페이지 열기" />
+                        <Button Style="{StaticResource FlatButton}" Click="OnSettings" Margin="8,0,0,0" Content="설정" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

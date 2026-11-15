@@ -1,0 +1,68 @@
+<Window x:Class="BinanceCumulative.Pc.App.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="설정" Width="600" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}" FontFamily="{StaticResource UiFont}" FontSize="13">
+    <StackPanel Margin="24">
+        <TextBlock Text="설정" FontSize="20" FontWeight="Bold" Margin="0,0,0,16" />
+
+        <TextBlock Style="{StaticResource Label}" Text="계산 서버 주소 (다른 PC 의 서버를 쓰려면 그 PC 의 주소)" />
+        <TextBox x:Name="ServerUrl" Style="{StaticResource Input}" Margin="0,4,0,8" />
+        <CheckBox x:Name="AutoStart" Content="이 PC 에서 계산 서버를 자동으로 켜기 (주소가 localhost 일 때)" />
+
+        <TextBlock Style="{StaticResource Label}" Text="1분봉 저장 폴더 (디스크 여유가 있는 곳)" Margin="0,12,0,0" />
+        <DockPanel Margin="0,4,0,0">
+            <Button DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Content="찾기" Margin="6,0,0,0" Click="OnBrowse" />
+            <TextBox x:Name="DataFolder" Style="{StaticResource Input}" />
+        </DockPanel>
+
+        <Grid Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Style="{StaticResource Label}" Text="수집 기간 (개월, 1~120 · 120 = 2017년 첫 1분봉부터 전부)" />
+                <TextBox x:Name="Months" Style="{StaticResource Input}" Margin="0,4,12,0" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,18,0,0">
+                <CheckBox x:Name="Futures" Content="USDⓈ-M 무기한 선물도 수집" />
+                <CheckBox x:Name="KeepRaw" Content="지난 달 1분봉 원본도 보관 (디스크 많이 씀)" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Style="{StaticResource Label}" Text="CoinMarketCap API Key (선택, CoinGecko 에 없는 코인의 발행량)" Margin="0,12,0,0" />
+        <TextBox x:Name="CmcKey" Style="{StaticResource Input}" Margin="0,4,0,0" />
+
+        <TextBlock Style="{StaticResource Label}" Text="java.exe 위치 (비우면 자동으로 찾음)" Margin="0,12,0,0" />
+        <TextBox x:Name="JavaPath" Style="{StaticResource Input}" Margin="0,4,0,0" />
+
+        <!-- 로컬 DB -->
+        <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,12,0,0">
+            <StackPanel>
+                <TextBlock Text="로컬 DB (SQLite)" FontWeight="Bold" />
+                <TextBlock x:Name="DbPath" Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                <TextBlock x:Name="DbInfo" Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                <TextBlock Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,8,0,0"
+                           Text="일별 집계: 앱이 켜져 있는 동안 서버가 새 순위를 낼 때마다 자동으로 이어서 쌓습니다 (이미 마감된 날은 건너뜀)." />
+                <TextBlock Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Text="daily_agg: 페어 · 분할 방식(A/B/C) · UTC 날짜별 그날의 순매수·매수·매도·거래대금(호가 자산 + USDT 환산), 순매수 코인 수, 시·고·저·종가, 가장 예전 날부터의 누적. daily_coin: 같은 코인의 모든 페어를 USDT 로 합산한 하루 한 줄." />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Style="{StaticResource FlatButton}" Content="DB 폴더 열기" Click="OnOpenDbFolder" />
+                    <Button Style="{StaticResource FlatButton}" Content="코인별 CSV (USDT 합산)" Margin="8,0,0,0" Click="OnExportCoinCsv" ToolTip="daily_coin: 같은 코인의 모든 페어를 USDT 로 더한 하루 한 줄" />
+                    <Button Style="{StaticResource FlatButton}" Content="페어별 CSV" Margin="8,0,0,0" Click="OnExportCsv" ToolTip="daily_agg: 페어 × 방식 × 날짜 원본 줄" />
+                    <Button Style="{StaticResource FlatButton}" Content="그래프 저장본 비우기" Margin="8,0,0,0" Click="OnClearCache"
+                            ToolTip="순위·그래프 저장본만 지웁니다. 설정과 일별 집계는 남습니다" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="Error" Foreground="{StaticResource DownBrush}" Margin="0,10,0,0" TextWrapping="Wrap" />
+        <TextBlock Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,6,0,0"
+                   Text="서버 관련 설정을 바꾸면 이 앱이 켠 계산 서버를 다시 시작합니다." />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Style="{StaticResource FlatButton}" Content="취소" IsCancel="True" />
+            <Button Style="{StaticResource AccentButton}" Content="저장" Margin="8,0,0,0" IsDefault="True" Click="OnSave" />
+        </StackPanel>
+    </StackPanel>
+</Window>

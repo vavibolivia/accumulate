@@ -1,0 +1,180 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>C 체결 방식 계산법</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 한 장짜리 설명서. 위에서 아래로 정의 → 공식 → 실제 하루 계산 → 표까지 가는 경로 → 한계 */
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --line: #dcdfd6;
+  --fg: #1b1f1a;
+  --muted: #5f675c;
+  --accent: #9a6b00;
+  --buy: #0b7a52;
+  --buy-soft: #d6efe3;
+  --sell: #b3312f;
+  --sell-soft: #f6dcda;
+  --code-bg: #eef0ea;
+  --font-text: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12150f; --surface: #1a1e17; --line: #30362b; --fg: #e9ece4; --muted: #9ca596;
+    --accent: #f0b90b; --buy: #2fca8c; --buy-soft: #17382b; --sell: #f0605d; --sell-soft: #421f1e;
+    --code-bg: #20251c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12150f; --surface: #1a1e17; --line: #30362b; --fg: #e9ece4; --muted: #9ca596;
+  --accent: #f0b90b; --buy: #2fca8c; --buy-soft: #17382b; --sell: #f0605d; --sell-soft: #421f1e;
+  --code-bg: #20251c; color-scheme: dark;
+}
+
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-text); font-size: 15px; line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 40px;
+}
+.page { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.buy { color: var(--buy); }
+.sell { color: var(--sell); }
+
+header { display: flex; flex-direction: column; gap: 8px; }
+.eyebrow { font-family: var(--font-num); font-size: 12px; letter-spacing: 0.08em; color: var(--accent); font-weight: 600; }
+h1 { margin: 0; font-size: 28px; line-height: 1.25; font-weight: 700; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 62ch; }
+
+section { display: flex; flex-direction: column; gap: 12px; }
+h2 { margin: 0; font-size: 17px; font-weight: 700; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+
+/* 체결 한 건 */
+.trade { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; }
+.side { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 12px 14px; min-width: 0; }
+.side b { display: block; font-size: 15px; }
+.side span { color: var(--muted); font-size: 13px; }
+.hit { align-self: center; font-family: var(--font-num); font-size: 12px; color: var(--muted); text-align: center; }
+.cases { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.case { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; min-width: 0; font-size: 14px; }
+.case.b { border-color: var(--buy); }
+.case.s { border-color: var(--sell); }
+
+/* 공식 */
+.formula {
+  background: var(--code-bg); border-radius: 6px; padding: 14px 16px;
+  font-family: var(--font-num); font-size: 14px; line-height: 1.9; overflow-x: auto; white-space: nowrap;
+}
+.formula .cm { color: var(--muted); }
+
+/* 실제 하루 */
+.split { display: flex; height: 34px; border-radius: 4px; overflow: hidden; font-family: var(--font-num); font-size: 12px; font-weight: 600; }
+.split div { display: flex; align-items: center; padding: 0 10px; min-width: 0; white-space: nowrap; }
+.split .b { background: var(--buy-soft); color: var(--buy); width: 48.16%; }
+.split .s { background: var(--sell-soft); color: var(--sell); width: 51.84%; justify-content: flex-end; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; }
+td.src { color: var(--muted); font-size: 12px; text-align: left; white-space: normal; min-width: 150px; }
+tr.total td { border-bottom: 0; font-weight: 600; }
+.note { font-size: 13px; color: var(--muted); }
+
+/* 표까지 가는 경로 */
+ol.path { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0; counter-reset: step; }
+ol.path li { counter-increment: step; display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+ol.path li:last-child { border-bottom: 0; }
+ol.path li::before { content: counter(step); font-family: var(--font-num); font-weight: 600; color: var(--accent); }
+ol.path b { display: block; }
+ol.path span { color: var(--muted); font-size: 14px; }
+
+ul.limits { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; max-width: 68ch; }
+
+@media (max-width: 560px) {
+  h1 { font-size: 23px; }
+  .trade { grid-template-columns: 1fr; }
+  .cases { grid-template-columns: 1fr; }
+  .split { font-size: 11px; }
+}
+</style>
+
+<div class="page">
+
+  <header>
+    <div class="eyebrow">누적 순매수 · 방식 C (TAKER)</div>
+    <h1>C 체결: 시장가로 먼저 달려든 쪽이 매수였나 매도였나</h1>
+    <p class="lead">C 방식은 추정이 아닙니다. 바이낸스가 봉마다 직접 주는 taker buy 체결량을 그대로 쓰고, 나머지를 taker sell 로 봅니다.</p>
+  </header>
+
+  <section>
+    <h2>체결 한 건에는 taker 가 정확히 한 명 있다</h2>
+    <div class="trade">
+      <div class="side"><b>Maker</b><span>호가창에 지정가 주문을 걸어 두고 기다린 쪽</span></div>
+      <div class="hit">← 체결 →</div>
+      <div class="side"><b>Taker</b><span>걸려 있는 주문을 바로 가져간 쪽 (시장가 등)</span></div>
+    </div>
+    <div class="cases">
+      <div class="case b"><b class="buy">taker buy</b><br>taker 가 사는 쪽. 매도 호가를 먹으며 올라간 체결입니다.</div>
+      <div class="case s"><b class="sell">taker sell</b><br>taker 가 파는 쪽. 매수 호가에 던진 체결입니다.</div>
+    </div>
+    <p>모든 체결은 둘 중 하나이므로, 전체 거래량에서 taker buy 를 빼면 남는 것이 전부 taker sell 입니다. 바이낸스가 taker sell 을 따로 주지 않는 이유입니다.</p>
+  </section>
+
+  <section>
+    <h2>공식</h2>
+    <div class="formula">
+      <span class="buy">매수</span> = taker buy 금액 <span class="cm">&nbsp;← 봉의 11번째 값 (taker buy quote asset volume)</span><br>
+      <span class="sell">매도</span> = 거래대금 − taker buy 금액 <span class="cm">&nbsp;← 거래대금은 봉의 8번째 값 (quote asset volume)</span><br>
+      순매수 = <span class="buy">매수</span> − <span class="sell">매도</span> = 2 × taker buy 금액 − 거래대금
+    </div>
+    <p class="note">코인 수로 볼 때는 같은 식에 taker buy 수량(10번째 값)과 거래량(6번째 값)을 넣습니다.</p>
+  </section>
+
+  <section>
+    <h2>실제 하루로 계산: ORCA/USDT, 2026-11-13 (UTC)</h2>
+    <div class="split" role="img" aria-label="taker buy 48.16퍼센트, taker sell 51.84퍼센트">
+      <div class="b">taker buy 48.16%</div>
+      <div class="s">taker sell 51.84%</div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>항목</th><th>금액 (USDT)</th><th>코인 수 (ORCA)</th><th style="text-align:left">어디서 오나</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>거래대금 · 거래량</td><td class="num">901,242.10833</td><td class="num">718,975.15</td><td class="src">바이낸스가 준 값</td></tr>
+          <tr><td class="buy">매수 (taker buy)</td><td class="num buy">434,075.48416</td><td class="num buy">346,636.65</td><td class="src">바이낸스가 준 값</td></tr>
+          <tr><td class="sell">매도 (taker sell)</td><td class="num sell">467,166.62417</td><td class="num sell">372,338.50</td><td class="src">거래대금 − 매수</td></tr>
+          <tr class="total"><td>순매수</td><td class="num sell">−33,091.14001</td><td class="num sell">−25,701.85</td><td class="src">매수 − 매도</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">앱 서버가 이 날에 대해 내놓은 값도 순매수 −33,091.14001 USDT, −25,701.85 ORCA, 거래대금 901,242.10833 USDT 로 같습니다. 1분봉 1,440개를 더한 값과 일봉 1개의 값도 끝자리까지 같습니다.</p>
+  </section>
+
+  <section>
+    <h2>이 숫자가 표의 한 줄이 되기까지</h2>
+    <ol class="path">
+      <li><div><b>봉마다 순매수를 구한다</b><span>서버는 1분봉마다 위 공식을 적용합니다.</span></div></li>
+      <li><div><b>기간만큼 더한다</b><span>고른 기간(1개월 ~ 전체)의 순매수를 모두 더한 것이 누적 순매수입니다. 그래프는 이 합이 쌓여 가는 모습입니다.</span></div></li>
+      <li><div><b>USDT 로 바꾼다</b><span>호가 자산이 USDT 가 아니면(ORCA/TRY, ORCA/USDC 등) 그날의 환율로 USDT 금액으로 바꿉니다.</span></div></li>
+      <li><div><b>같은 코인의 페어를 합친다</b><span>ORCA/USDT + ORCA/USDC + ORCA/TRY 를 더해 ORCA 한 줄로 만듭니다.</span></div></li>
+      <li><div><b>유통량으로 나눈다</b><span>표의 "÷ 유통량" 열은 누적 순매수 코인 수 ÷ 유통량(CoinGecko)입니다.</span></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>읽을 때 알아 둘 점</h2>
+    <ul class="limits">
+      <li>사는 사람과 파는 사람의 수량은 언제나 같습니다. 순매수는 "누가 더 샀나"가 아니라 "어느 쪽이 더 급하게 호가를 먹었나"를 잽니다.</li>
+      <li>지정가를 깔아 두고 받아 모으는 매집은 상대방의 taker sell 로 잡힙니다. 조용히 모으는 동안 순매수가 오히려 음수로 나올 수 있습니다.</li>
+      <li>바이낸스 현물 체결만 봅니다. 선물, 다른 거래소, 장외 거래, 입출금은 들어 있지 않습니다.</li>
+      <li>A 경로·B 종가 방식은 가격 움직임으로 매수·매도를 추정한 값이고, C 만 실제 체결 기록입니다.</li>
+    </ul>
+  </section>
+
+</div>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- WPF 와 무관한 로직: 서버 API, 순위 계산, 서버 실행 관리, 화면 상태(ViewModel), 그래프 구성. 리눅스에서도 빌드·테스트 가능 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>BinanceCumulative.Pc</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+    <PackageReference Include="ScottPlot" Version="5.0.55" />
+  </ItemGroup>
+</Project>
